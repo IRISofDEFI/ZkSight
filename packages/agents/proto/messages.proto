@@ -1,0 +1,351 @@
+syntax = "proto3";
+
+package chimera.messaging;
+
+// Common message metadata
+message MessageMetadata {
+  string message_id = 1;
+  string correlation_id = 2;
+  int64 timestamp = 3;
+  string sender_agent = 4;
+  string reply_to = 5;
+}
+
+// Time range specification
+message TimeRange {
+  int64 start_timestamp = 1;
+  int64 end_timestamp = 2;
+}
+
+// Data source specification
+enum DataSourceType {
+  DATA_SOURCE_UNKNOWN = 0;
+  DATA_SOURCE_BLOCKCHAIN = 1;
+  DATA_SOURCE_EXCHANGE = 2;
+  DATA_SOURCE_SOCIAL = 3;
+}
+
+message DataSource {
+  DataSourceType type = 1;
+  string name = 2;
+}
+
+// Query Agent Messages
+message QueryRequest {
+  MessageMetadata metadata = 1;
+  string user_id = 2;
+  string session_id = 3;
+  string query = 4;
+  map<string, string> context = 5;
+}
+
+message QueryIntent {
+  enum IntentType {
+    INTENT_UNKNOWN = 0;
+    INTENT_TREND_ANALYSIS = 1;
+    INTENT_ANOMALY_DETECTION = 2;
+    INTENT_COMPARISON = 3;
+    INTENT_EXPLANATION = 4;
+  }
+  
+  IntentType type = 1;
+  TimeRange time_range = 2;
+  repeated string metrics = 3;
+}
+
+message ExtractedEntity {
+  string entity_type = 1;
+  string value = 2;
+  float confidence = 3;
+}
+
+message QueryResponse {
+  MessageMetadata metadata = 1;
+  QueryIntent intent = 2;
+  repeated ExtractedEntity entities = 3;
+  repeated DataSource required_data_sources = 4;
+  bool clarification_needed = 5;
+  repeated string clarification_questions = 6;
+}
+
+// Data Retrieval Agent Messages
+message DataRetrievalRequest {
+  MessageMetadata metadata = 1;
+  repeated DataSource sources = 2;
+  TimeRange time_range = 3;
+  repeated string metrics = 4;
+  map<string, string> filters = 5;
+}
+
+message DataPoint {
+  int64 timestamp = 1;
+  string metric = 2;
+  oneof value {
+    double numeric_value = 3;
+    string string_value = 4;
+  }
+  map<string, string> tags = 5;
+}
+
+message DataSourceMetadata {
+  string source = 1;
+  int64 timestamp = 2;
+  bool cached = 3;
+}
+
+message DataSourceError {
+  string source = 1;
+  string error_message = 2;
+  string error_code = 3;
+}
+
+message DataRetrievalResponse {
+  MessageMetadata metadata = 1;
+  map<string, DataPointList> data = 2;
+  repeated DataSourceMetadata source_metadata = 3;
+  repeated DataSourceError errors = 4;
+}
+
+message DataPointList {
+  repeated DataPoint points = 1;
+}
+
+// Analysis Agent Messages
+message AnalysisRequest {
+  MessageMetadata metadata = 1;
+  map<string, DataPointList> data = 2;
+  repeated string analysis_types = 3;
+  map<string, string> parameters = 4;
+}
+
+message Correlation {
+  string metric1 = 1;
+  string metric2 = 2;
+  double coefficient = 3;
+  double p_value = 4;
+  bool significant = 5;
+  int32 lag = 6;
+}
+
+message Anomaly {
+  enum Severity {
+    SEVERITY_UNKNOWN = 0;
+    SEVERITY_LOW = 1;
+    SEVERITY_MEDIUM = 2;
+    SEVERITY_HIGH = 3;
+  }
+  
+  string metric = 1;
+  int64 timestamp = 2;
+  double value = 3;
+  double expected_value = 4;
+  double deviation_score = 5;
+  Severity severity = 6;
+  string context = 7;
+}
+
+message Pattern {
+  string pattern_type = 1;
+  string metric = 2;
+  string description = 3;
+  double confidence = 4;
+  map<string, double> parameters = 5;
+}
+
+message Statistics {
+  string metric = 1;
+  double mean = 2;
+  double median = 3;
+  double std_dev = 4;
+  double min = 5;
+  double max = 6;
+}
+
+message AnalysisResponse {
+  MessageMetadata metadata = 1;
+  repeated Correlation correlations = 2;
+  repeated Anomaly anomalies = 3;
+  repeated Pattern patterns = 4;
+  repeated Statistics statistics = 5;
+}
+
+// Narrative Agent Messages
+message NarrativeRequest {
+  MessageMetadata metadata = 1;
+  AnalysisResponse analysis_results = 2;
+  string original_query = 3;
+  string user_expertise_level = 4;
+  string format = 5;
+}
+
+message ReportSection {
+  string title = 1;
+  string content = 2;
+  int32 order = 3;
+}
+
+message Report {
+  string title = 1;
+  string executive_summary = 2;
+  repeated ReportSection sections = 3;
+  int64 created_at = 4;
+}
+
+message Visualization {
+  enum VisualizationType {
+    VIZ_UNKNOWN = 0;
+    VIZ_LINE = 1;
+    VIZ_BAR = 2;
+    VIZ_SCATTER = 3;
+    VIZ_HEATMAP = 4;
+    VIZ_CANDLESTICK = 5;
+  }
+  
+  string id = 1;
+  VisualizationType type = 2;
+  string data_json = 3;
+  string config_json = 4;
+  string description = 5;
+}
+
+message NarrativeResponse {
+  MessageMetadata metadata = 1;
+  Report report = 2;
+  repeated Visualization visualizations = 3;
+  map<string, string> export_urls = 4;
+}
+
+// Fact-Checker Agent Messages
+message Claim {
+  string id = 1;
+  string statement = 2;
+  string metric = 3;
+  oneof value {
+    double numeric_value = 4;
+    string string_value = 5;
+  }
+  TimeRange time_range = 6;
+}
+
+message FactCheckRequest {
+  MessageMetadata metadata = 1;
+  repeated Claim claims = 2;
+  Report report = 3;
+}
+
+message Evidence {
+  string source = 1;
+  string data_json = 2;
+  int64 timestamp = 3;
+}
+
+message VerifiedClaim {
+  Claim claim = 1;
+  bool verified = 2;
+  double confidence = 3;
+  repeated string sources = 4;
+  repeated Evidence evidence = 5;
+}
+
+message DataConflict {
+  Claim claim = 1;
+  repeated ConflictSource sources = 2;
+  string resolution = 3;
+}
+
+message ConflictSource {
+  string source = 1;
+  oneof value {
+    double numeric_value = 2;
+    string string_value = 3;
+  }
+  double difference = 4;
+}
+
+message AuditEntry {
+  string claim_id = 1;
+  int64 timestamp = 2;
+  string action = 3;
+  string result = 4;
+  map<string, string> details = 5;
+}
+
+message FactCheckResponse {
+  MessageMetadata metadata = 1;
+  repeated VerifiedClaim verified_claims = 2;
+  repeated DataConflict conflicts = 3;
+  repeated AuditEntry audit_trail = 4;
+  double overall_confidence = 5;
+}
+
+// Follow-up Agent Messages
+message FollowUpRequest {
+  MessageMetadata metadata = 1;
+  string original_query = 2;
+  AnalysisResponse analysis_results = 3;
+  Report report = 4;
+  repeated string session_history = 5;
+}
+
+message Suggestion {
+  string question = 1;
+  string rationale = 2;
+  int32 priority = 3;
+  bool data_available = 4;
+  string estimated_complexity = 5;
+}
+
+message ExplorationPath {
+  string theme = 1;
+  repeated string questions = 2;
+  string description = 3;
+}
+
+message FollowUpResponse {
+  MessageMetadata metadata = 1;
+  repeated Suggestion suggestions = 2;
+  repeated ExplorationPath exploration_paths = 3;
+}
+
+// Monitoring Agent Messages
+message AlertCondition {
+  string metric = 1;
+  string operator = 2;
+  double threshold = 3;
+  int32 duration_seconds = 4;
+  int32 cooldown_seconds = 5;
+}
+
+message AlertRule {
+  string id = 1;
+  string name = 2;
+  AlertCondition condition = 3;
+  repeated string notification_channels = 4;
+  bool enabled = 5;
+}
+
+message Alert {
+  string rule_id = 1;
+  int64 timestamp = 2;
+  string metric = 3;
+  double current_value = 4;
+  double threshold = 5;
+  string severity = 6;
+  map<string, string> context = 7;
+  repeated string suggested_actions = 8;
+}
+
+message MonitoringEvent {
+  MessageMetadata metadata = 1;
+  Alert alert = 2;
+}
+
+// Error Messages
+message ErrorResponse {
+  MessageMetadata metadata = 1;
+  string error_code = 2;
+  string error_message = 3;
+  map<string, string> details = 4;
+  bool retryable = 5;
+  string suggested_action = 6;
+}

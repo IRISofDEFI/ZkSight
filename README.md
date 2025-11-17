@@ -158,12 +158,4 @@ The system follows a microservices architecture with event-driven communication:
 3. **Message Bus**: RabbitMQ for asynchronous agent communication
 4. **Data Layer**: InfluxDB (time series), MongoDB (documents), Redis (cache), MinIO (objects)
 
-## Documentation
 
-- [Requirements](/.kiro/specs/chimera-analytics/requirements.md)
-- [Design](/.kiro/specs/chimera-analytics/design.md)
-- [Implementation Tasks](/.kiro/specs/chimera-analytics/tasks.md)
-
-## License
-
-Proprietary

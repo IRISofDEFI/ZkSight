@@ -10,7 +10,8 @@
     "start": "node dist/index.js",
     "lint": "eslint src/ --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
-    "test": "vitest --run"
+    "test": "vitest --run",
+    "proto:generate": "pbjs -t static-module -w commonjs -o src/messaging/generated/messages.js ../agents/proto/messages.proto && pbts -o src/messaging/generated/messages.d.ts src/messaging/generated/messages.js"
   },
   "dependencies": {
     "express": "^4.18.2",
@@ -22,19 +23,23 @@
     "zod": "^3.22.4",
     "amqplib": "^0.10.3",
     "redis": "^4.6.12",
-    "mongodb": "^6.3.0"
+    "mongodb": "^6.3.0",
+    "protobufjs": "^7.2.5",
+    "uuid": "^9.0.1"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
     "@types/cors": "^2.8.17",
     "@types/compression": "^1.7.5",
     "@types/node": "^20.10.6",
+    "@types/uuid": "^9.0.7",
     "@typescript-eslint/eslint-plugin": "^6.17.0",
     "@typescript-eslint/parser": "^6.17.0",
     "eslint": "^8.56.0",
     "prettier": "^3.1.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
-    "vitest": "^1.1.0"
+    "vitest": "^1.1.0",
+    "protobufjs-cli": "^1.1.2"
   }
 }
