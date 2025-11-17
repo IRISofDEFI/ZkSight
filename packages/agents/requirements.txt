@@ -29,6 +29,9 @@ redis>=5.0.0
 httpx>=0.25.0
 aiohttp>=3.9.0
 
+# Redis async client
+redis[hiredis]>=5.0.0
+
 # Scheduling
 apscheduler>=3.10.0
 
