@@ -1,0 +1,11 @@
+{
+  "name": "@chimera/agents",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Python-based AI agents for Chimera Analytics",
+  "scripts": {
+    "lint": "pylint src/",
+    "format": "black src/ && isort src/",
+    "test": "pytest tests/"
+  }
+}
