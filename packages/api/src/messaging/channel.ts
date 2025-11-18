@@ -1,12 +1,12 @@
 /**
  * Channel management utilities for RabbitMQ
  */
-import { Channel, Options } from 'amqplib';
+import * as amqp from 'amqplib';
 import { ConnectionPool } from './connection';
 
 export class ChannelManager {
   private connectionPool: ConnectionPool;
-  private channels: Map<string, Channel> = new Map();
+  private channels: Map<string, amqp.Channel> = new Map();
 
   constructor(connectionPool: ConnectionPool) {
     this.connectionPool = connectionPool;
@@ -15,7 +15,7 @@ export class ChannelManager {
   /**
    * Get or create a channel
    */
-  async getChannel(channelId: string = 'default'): Promise<Channel> {
+  async getChannel(channelId: string = 'default'): Promise<amqp.Channel> {
     // Check if we have an existing channel
     const existingChannel = this.channels.get(channelId);
     if (existingChannel) {
@@ -25,10 +25,10 @@ export class ChannelManager {
     // Create new channel
     try {
       const connection = await this.connectionPool.getConnection();
-      const channel = await connection.createChannel();
+      const channel = await (connection as any).createChannel();
 
       // Handle channel errors
-      channel.on('error', (err) => {
+      channel.on('error', (err: Error) => {
         console.error(`Channel ${channelId} error:`, err);
         this.channels.delete(channelId);
       });
@@ -76,10 +76,10 @@ export class ChannelManager {
    * Declare an exchange
    */
   async declareExchange(
-    channel: Channel,
+    channel: amqp.Channel,
     exchangeName: string,
     exchangeType: 'direct' | 'topic' | 'fanout' | 'headers' = 'topic',
-    options: Options.AssertExchange = {}
+    options: amqp.Options.AssertExchange = {}
   ): Promise<void> {
     try {
       await channel.assertExchange(exchangeName, exchangeType, {
@@ -97,9 +97,9 @@ export class ChannelManager {
    * Declare a queue
    */
   async declareQueue(
-    channel: Channel,
+    channel: amqp.Channel,
     queueName: string,
-    options: Options.AssertQueue = {}
+    options: amqp.Options.AssertQueue = {}
   ): Promise<{ queue: string; messageCount: number; consumerCount: number }> {
     try {
       const result = await channel.assertQueue(queueName, {
@@ -118,7 +118,7 @@ export class ChannelManager {
    * Bind a queue to an exchange with a routing key
    */
   async bindQueue(
-    channel: Channel,
+    channel: amqp.Channel,
     queueName: string,
     exchangeName: string,
     routingKey: string
@@ -140,7 +140,7 @@ export class ChannelManager {
   /**
    * Set prefetch count for a channel (QoS)
    */
-  async setPrefetch(channel: Channel, count: number): Promise<void> {
+  async setPrefetch(channel: amqp.Channel, count: number): Promise<void> {
     try {
       await channel.prefetch(count);
       console.log(`Set prefetch count to ${count}`);

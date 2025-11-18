@@ -4,6 +4,7 @@
   "private": true,
   "description": "Python-based AI agents for Chimera Analytics",
   "scripts": {
+    "build": "echo 'Python package - no build needed'",
     "lint": "pylint src/",
     "format": "black src/ && isort src/",
     "test": "pytest tests/"

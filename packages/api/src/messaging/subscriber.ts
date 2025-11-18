@@ -1,7 +1,7 @@
 /**
  * Event subscriber for consuming messages from RabbitMQ
  */
-import { Channel, ConsumeMessage, Options } from 'amqplib';
+import { ConsumeMessage } from 'amqplib';
 import { ConnectionPool } from './connection';
 import { ChannelManager } from './channel';
 
@@ -173,7 +173,7 @@ export abstract class EventSubscriber {
 
       const { consumerTag } = await channel.consume(
         this.queueName,
-        (msg) => this.onMessage(msg),
+        (msg: any) => this.onMessage(msg),
         { noAck: false }
       );
 

@@ -1,7 +1,7 @@
 /**
  * Event publisher for sending messages to RabbitMQ
  */
-import { Channel, Options } from 'amqplib';
+import * as amqp from 'amqplib';
 import { ConnectionPool } from './connection';
 import { ChannelManager } from './channel';
 
@@ -13,7 +13,6 @@ export interface PublishOptions {
 }
 
 export class EventPublisher {
-  private connectionPool: ConnectionPool;
   private agentName: string;
   private exchangeName: string;
   private exchangeType: 'direct' | 'topic' | 'fanout' | 'headers';
@@ -25,7 +24,6 @@ export class EventPublisher {
     exchangeName: string = 'chimera.events',
     exchangeType: 'direct' | 'topic' | 'fanout' | 'headers' = 'topic'
   ) {
-    this.connectionPool = connectionPool;
     this.agentName = agentName;
     this.exchangeName = exchangeName;
     this.exchangeType = exchangeType;
@@ -66,7 +64,7 @@ export class EventPublisher {
         message instanceof Buffer ? message : Buffer.from(JSON.stringify(message));
 
       // Build message options
-      const publishOptions: Options.Publish = {
+      const publishOptions: amqp.Options.Publish = {
         persistent: options.persistent ?? true,
         contentType: message instanceof Buffer ? 'application/x-protobuf' : 'application/json',
         correlationId: options.correlationId,
