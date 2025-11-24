@@ -1,7 +1,7 @@
 /**
  * RabbitMQ connection management with retry logic and exponential backoff
  */
-import amqp, { Connection, Options } from 'amqplib';
+import * as amqp from 'amqplib';
 
 export interface RabbitMQConfig {
   host: string;
@@ -22,7 +22,7 @@ export class ConnectionPool {
   private maxRetries: number;
   private initialRetryDelay: number;
   private maxRetryDelay: number;
-  private connection: Connection | null = null;
+  private connection: amqp.Connection | null = null;
 
   constructor(config: RabbitMQConfig, options: ConnectionPoolOptions = {}) {
     this.config = config;
@@ -58,7 +58,7 @@ export class ConnectionPool {
   /**
    * Establish connection to RabbitMQ with retry logic
    */
-  async connect(): Promise<Connection> {
+  async connect(): Promise<amqp.Connection> {
     if (this.connection) {
       return this.connection;
     }
@@ -73,14 +73,15 @@ export class ConnectionPool {
             `(attempt ${attempt + 1}/${this.maxRetries})`
         );
 
-        const options: Options.Connect = {
+        const options: amqp.Options.Connect = {
           heartbeat: 60,
         };
 
-        this.connection = await amqp.connect(url, options);
+        const conn = await amqp.connect(url, options);
+        this.connection = conn as unknown as amqp.Connection;
 
         // Handle connection errors
-        this.connection.on('error', (err) => {
+        this.connection.on('error', (err: Error) => {
           console.error('RabbitMQ connection error:', err);
           this.connection = null;
         });
@@ -118,9 +119,9 @@ export class ConnectionPool {
   /**
    * Get active connection, reconnecting if necessary
    */
-  async getConnection(): Promise<Connection> {
+  async getConnection(): Promise<amqp.Connection> {
     if (!this.connection) {
-      return this.connect();
+      return await this.connect();
     }
     return this.connection;
   }
@@ -132,7 +133,7 @@ export class ConnectionPool {
     if (this.connection) {
       try {
         console.log('Closing RabbitMQ connection');
-        await this.connection.close();
+        await (this.connection as any).close();
       } catch (error) {
         console.error('Error closing RabbitMQ connection:', error);
       } finally {

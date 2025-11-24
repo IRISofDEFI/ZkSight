@@ -61,7 +61,7 @@ export class ExampleAgent extends EventSubscriber {
    * Handle query request
    */
   private async handleQueryRequest(
-    message: Buffer,
+    _message: Buffer,
     correlationId?: string
   ): Promise<void> {
     console.log('Handling query request');
@@ -89,7 +89,7 @@ export class ExampleAgent extends EventSubscriber {
    * Handle data retrieval request
    */
   private async handleDataRequest(
-    message: Buffer,
+    _message: Buffer,
     correlationId?: string
   ): Promise<void> {
     console.log('Handling data request');
