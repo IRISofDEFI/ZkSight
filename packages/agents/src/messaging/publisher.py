@@ -57,6 +57,7 @@ class EventPublisher:
         routing_key: str,
         correlation_id: Optional[str] = None,
         properties: Optional[Dict[str, Any]] = None,
+        headers: Optional[Dict[str, str]] = None,
     ) -> None:
         """
         Publish a message to the exchange
@@ -66,6 +67,7 @@ class EventPublisher:
             routing_key: Routing key for message routing
             correlation_id: Optional correlation ID for request tracking
             properties: Optional additional message properties
+            headers: Optional message headers (for trace context propagation)
 
         Raises:
             Exception: If publishing fails
@@ -83,6 +85,7 @@ class EventPublisher:
                 correlation_id=correlation_id,
                 app_id=self.agent_name,
                 timestamp=int(pika.spec.BASIC_CLASS),
+                headers=headers or {},
             )
 
             # Add custom properties if provided

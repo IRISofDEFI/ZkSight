@@ -2,32 +2,26 @@
  * Request logging middleware with structured logging
  */
 import { Request, Response, NextFunction } from 'express';
-import morgan from 'morgan';
+import { logRequestStart, logRequestEnd, setCorrelationId } from '../logging';
 
-// Custom token for correlation ID
-morgan.token('correlation-id', (req: Request) => req.correlationId);
-
-// Custom token for response time in ms
-morgan.token('response-time-ms', (req: Request, res: Response) => {
-  const responseTime = res.getHeader('X-Response-Time');
-  return responseTime ? `${responseTime}ms` : '-';
-});
-
-// JSON format for structured logging
-morgan.format('json', (tokens, req: Request, res: Response) => {
-  return JSON.stringify({
-    timestamp: new Date().toISOString(),
-    correlationId: tokens['correlation-id'](req, res),
-    method: tokens.method(req, res),
-    url: tokens.url(req, res),
-    status: tokens.status(req, res),
-    responseTime: tokens['response-time'](req, res),
-    contentLength: tokens.res(req, res, 'content-length'),
-    userAgent: tokens['user-agent'](req, res),
-    remoteAddr: tokens['remote-addr'](req, res),
+/**
+ * Middleware to log HTTP requests with structured logging
+ */
+export function requestLogger(req: Request, res: Response, next: NextFunction): void {
+  const startTime = Date.now();
+  const correlationId = req.correlationId || 'unknown';
+  
+  // Set correlation ID in async context
+  setCorrelationId(correlationId);
+  
+  // Log request start
+  logRequestStart(req.method, req.path, correlationId);
+  
+  // Capture response finish event
+  res.on('finish', () => {
+    const duration = Date.now() - startTime;
+    logRequestEnd(req.method, req.path, res.statusCode, duration, correlationId);
   });
-});
-
-export const requestLogger = morgan('json', {
-  skip: (req: Request) => req.path === '/health',
-});
+  
+  next();
+}

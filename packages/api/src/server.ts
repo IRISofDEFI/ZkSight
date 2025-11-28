@@ -19,9 +19,21 @@ import { JwtService, AuthDatabase, AuthMiddleware } from './auth';
 import { getConnectionPool, EventPublisher } from './messaging';
 import { QueryRoutes, ReportRoutes, DashboardRoutes, AlertRoutes, MetricsRoutes } from './routes';
 import { WebSocketServer } from './websocket';
+import { setupTracing, shutdownTracing, tracingMiddleware } from './tracing';
 
 export async function createApp() {
   const config = loadConfig();
+  
+  // Initialize distributed tracing
+  console.log('Initializing distributed tracing...');
+  setupTracing(
+    'chimera-api',
+    '1.0.0',
+    process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'http://localhost:4317',
+    config.environment === 'development'
+  );
+  console.log('Distributed tracing initialized');
+  
   const app = express();
   const httpServer = createServer(app);
 
@@ -36,6 +48,9 @@ export async function createApp() {
 
   // Correlation ID for distributed tracing
   app.use(correlationIdMiddleware);
+
+  // Distributed tracing middleware
+  app.use(tracingMiddleware());
 
   // Request logging
   app.use(requestLogger);
@@ -147,6 +162,7 @@ export async function createApp() {
     await publisher.close();
     await authDb.close();
     await mongoClient.close();
+    await shutdownTracing();
     
     console.log('All connections closed');
     process.exit(0);

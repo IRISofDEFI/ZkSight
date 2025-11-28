@@ -10,6 +10,21 @@ from .publisher import EventPublisher
 from .subscriber import EventSubscriber
 from .messages import create_metadata
 
+# Import tracing utilities
+try:
+    from ..tracing import (
+        get_tracer,
+        inject_trace_context,
+        extract_trace_context,
+        trace_message_processing,
+        set_span_attribute,
+        add_span_event,
+        set_span_error,
+    )
+    TRACING_AVAILABLE = True
+except ImportError:
+    TRACING_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 
@@ -119,16 +134,57 @@ class BaseAgent(EventSubscriber):
             f"routing_key={routing_key}, correlation_id={correlation_id}"
         )
 
-        try:
-            # Route message to handler
-            self.route_message(message, routing_key, properties)
-        except Exception as e:
-            logger.error(
-                f"[{self.agent_name}] Error handling message: {e}",
-                exc_info=True
-            )
-            # Error will cause message to be rejected and sent to DLQ
-            raise
+        # Extract trace context from message headers if available
+        if TRACING_AVAILABLE and "headers" in properties:
+            try:
+                extract_trace_context(properties["headers"])
+            except Exception as e:
+                logger.debug(f"Could not extract trace context: {e}")
+
+        # Create span for message processing
+        if TRACING_AVAILABLE:
+            try:
+                with trace_message_processing(routing_key, correlation_id or ""):
+                    set_span_attribute("agent.name", self.agent_name)
+                    set_span_attribute("message.routing_key", routing_key)
+                    if correlation_id:
+                        set_span_attribute("message.correlation_id", correlation_id)
+                    
+                    add_span_event("message.received")
+                    
+                    try:
+                        # Route message to handler
+                        self.route_message(message, routing_key, properties)
+                        add_span_event("message.processed")
+                    except Exception as e:
+                        set_span_error(e)
+                        logger.error(
+                            f"[{self.agent_name}] Error handling message: {e}",
+                            exc_info=True
+                        )
+                        raise
+            except Exception as e:
+                # If tracing itself fails, still process the message
+                logger.debug(f"Tracing error (continuing): {e}")
+                try:
+                    self.route_message(message, routing_key, properties)
+                except Exception as e:
+                    logger.error(
+                        f"[{self.agent_name}] Error handling message: {e}",
+                        exc_info=True
+                    )
+                    raise
+        else:
+            try:
+                # Route message to handler
+                self.route_message(message, routing_key, properties)
+            except Exception as e:
+                logger.error(
+                    f"[{self.agent_name}] Error handling message: {e}",
+                    exc_info=True
+                )
+                # Error will cause message to be rejected and sent to DLQ
+                raise
 
     @abstractmethod
     def route_message(
@@ -170,11 +226,25 @@ class BaseAgent(EventSubscriber):
         if correlation_id is None:
             correlation_id = str(uuid.uuid4())
 
+        # Inject trace context into message headers if tracing is available
+        headers = {}
+        if TRACING_AVAILABLE:
+            try:
+                inject_trace_context(headers)
+                set_span_attribute("message.published", routing_key)
+                add_span_event("message.publish", {
+                    "routing_key": routing_key,
+                    "correlation_id": correlation_id,
+                })
+            except Exception as e:
+                logger.debug(f"Could not inject trace context: {e}")
+
         # Publish message
         self.publisher.publish(
             message=message,
             routing_key=routing_key,
             correlation_id=correlation_id,
+            headers=headers if headers else None,
         )
 
         logger.debug(

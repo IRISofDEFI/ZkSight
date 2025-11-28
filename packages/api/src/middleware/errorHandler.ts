@@ -2,55 +2,57 @@
  * Global error handling middleware
  */
 import { Request, Response, NextFunction } from 'express';
-
-export interface ApiError extends Error {
-  statusCode?: number;
-  code?: string;
-  retryable?: boolean;
-  details?: Record<string, any>;
-}
+import { ChimeraError, ErrorCode, createErrorResponse, UserError } from '../errors';
+import { logError } from '../logging';
 
 export function errorHandler(
-  err: ApiError,
+  err: Error | ChimeraError,
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
-  // Log error
-  console.error('Error:', {
-    correlationId: req.correlationId,
-    error: err.message,
-    stack: err.stack,
-    code: err.code,
+  // Convert to ChimeraError if it's a standard Error
+  const chimeraError = err instanceof ChimeraError
+    ? err
+    : new ChimeraError(
+        err.message || 'An unexpected error occurred',
+        ErrorCode.INTERNAL_SERVER_ERROR,
+        false,
+        { originalError: err.name }
+      );
+
+  // Log error with structured logging
+  logError(chimeraError, {
+    correlation_id: req.correlationId,
+    method: req.method,
+    path: req.path,
+    code: chimeraError.code,
+    retryable: chimeraError.retryable,
   });
 
-  // Determine status code
-  const statusCode = err.statusCode || 500;
-  
-  // Determine error code
-  const errorCode = err.code || 'INTERNAL_SERVER_ERROR';
-  
+  // Create standardized error response
+  const errorResponse = createErrorResponse(
+    chimeraError,
+    req.correlationId,
+    Date.now()
+  );
+
   // Send error response
-  res.status(statusCode).json({
-    error: {
-      code: errorCode,
-      message: err.message || 'An unexpected error occurred',
-      retryable: err.retryable ?? false,
-      details: err.details,
-    },
-    requestId: req.correlationId,
-    timestamp: Date.now(),
-  });
+  res.status(chimeraError.statusCode).json(errorResponse);
 }
 
 export function notFoundHandler(req: Request, res: Response): void {
-  res.status(404).json({
-    error: {
-      code: 'NOT_FOUND',
-      message: `Route ${req.method} ${req.path} not found`,
-      retryable: false,
-    },
-    requestId: req.correlationId,
-    timestamp: Date.now(),
-  });
+  const error = new UserError(
+    `Route ${req.method} ${req.path} not found`,
+    ErrorCode.NOT_FOUND,
+    false
+  );
+
+  const errorResponse = createErrorResponse(
+    error,
+    req.correlationId,
+    Date.now()
+  );
+
+  res.status(error.statusCode).json(errorResponse);
 }

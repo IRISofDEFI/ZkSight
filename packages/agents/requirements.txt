@@ -35,6 +35,14 @@ redis[hiredis]>=5.0.0
 # Scheduling
 apscheduler>=3.10.0
 
+# OpenTelemetry tracing
+opentelemetry-api>=1.21.0
+opentelemetry-sdk>=1.21.0
+opentelemetry-exporter-otlp-proto-grpc>=1.21.0
+opentelemetry-instrumentation-requests>=0.42b0
+opentelemetry-instrumentation-redis>=0.42b0
+opentelemetry-instrumentation-pymongo>=0.42b0
+
 # Testing
 pytest>=7.4.0
 pytest-asyncio>=0.21.0

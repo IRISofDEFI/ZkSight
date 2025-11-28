@@ -2,6 +2,12 @@
 
 Multi-agent analytics platform for Zcash blockchain data analysis.
 
+## 🚀 Quick Start
+
+**New here?** → See **[START_HERE.md](START_HERE.md)** for a 2-minute setup guide!
+
+**Already set up?** → Run `npm run dev:all` and open http://localhost:3000
+
 ## Features
 
 - 🤖 **7 Specialized AI Agents** - Query processing, data retrieval, analysis, narrative generation, fact-checking, follow-up suggestions, and monitoring
@@ -29,14 +35,24 @@ cd chimera-analytics
 # Install dependencies
 npm install
 
-# Start infrastructure services
+# Start infrastructure services (MongoDB, RabbitMQ, Redis, etc.)
 docker-compose up -d
 
-# Start dashboard
+# Start API server (in one terminal)
+npm run dev:api
+
+# Start dashboard (in another terminal)
 npm run dev
+
+# Or start both together
+npm run dev:all
 ```
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+**API Server:** http://localhost:3001  
+**Grafana Logs:** http://localhost:3002 (admin/admin)  
+**Jaeger Tracing:** http://localhost:16686
 
 ### Default Login
 
@@ -44,6 +60,16 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 Email: test@example.com
 Password: password123
 ```
+
+### Environment Setup
+
+All environment files have been pre-configured with development defaults:
+- `.env` - Root configuration
+- `packages/api/.env` - API server configuration
+- `packages/dashboard/.env.local` - Dashboard configuration
+- `packages/agents/.env` - Python agents configuration
+
+**Optional:** Add your API keys for external services (OpenAI, exchanges, social media) when ready.
 
 ## Project Structure
 
@@ -79,11 +105,23 @@ npm run format           # Format code
 | Service | Port | Credentials |
 |---------|------|-------------|
 | Dashboard | 3000 | - |
+| API Server | 3001 | - |
 | RabbitMQ | 5672, 15672 | guest/guest |
 | InfluxDB | 8086 | admin/adminpassword |
 | MongoDB | 27017 | admin/adminpassword |
 | Redis | 6379 | - |
 | MinIO | 9000, 9001 | minioadmin/minioadmin |
+| Loki | 3100 | - |
+| Grafana | 3002 | admin/admin |
+| Jaeger | 16686 | - |
+
+### Log Aggregation
+
+The system includes a complete log aggregation stack (Loki + Promtail + Grafana):
+
+- **Grafana**: Access at [http://localhost:3000](http://localhost:3000) (admin/admin)
+- **Features**: Real-time log streaming, filtering by service/level, correlation ID tracking
+- **Documentation**: See [config/LOG_AGGREGATION.md](config/LOG_AGGREGATION.md) for details
 
 ## Architecture
 

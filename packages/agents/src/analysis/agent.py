@@ -16,6 +16,13 @@ from .pattern_detector import PatternDetector
 from .significance_service import SignificanceTester
 from .storage import AnalysisResultRepository
 
+# Import tracing utilities
+try:
+    from ..tracing import trace_agent_operation, set_span_attribute, add_span_event
+    TRACING_AVAILABLE = True
+except ImportError:
+    TRACING_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -131,7 +138,22 @@ class AnalysisAgent(BaseAgent):
         if not series_collection:
             raise ValueError("AnalysisAgent requires at least one metric series.")
         assert self.pipeline is not None
-        return self.pipeline.run(series_collection)
+        
+        if TRACING_AVAILABLE:
+            @trace_agent_operation("run_analysis_pipeline")
+            def _run():
+                set_span_attribute("analysis.series_count", len(series_collection))
+                set_span_attribute("analysis.metrics", ",".join([s.metric for s in series_collection]))
+                add_span_event("analysis.pipeline.start")
+                result = self.pipeline.run(series_collection)
+                add_span_event("analysis.pipeline.complete")
+                set_span_attribute("analysis.anomalies_found", len(result.anomalies))
+                set_span_attribute("analysis.correlations_found", len(result.correlations))
+                set_span_attribute("analysis.patterns_found", len(result.patterns))
+                return result
+            return _run()
+        else:
+            return self.pipeline.run(series_collection)
 
     def _series_from_response(self, message: Any) -> List[DataSeries]:
         data_map = getattr(message, "data", {})

@@ -11,6 +11,13 @@ from .intent_classifier import IntentClassifier, IntentType
 from .context_manager import ContextManager
 from .clarification import ClarificationEngine
 
+# Import tracing utilities
+try:
+    from ..tracing import trace_agent_operation, set_span_attribute, add_span_event
+    TRACING_AVAILABLE = True
+except ImportError:
+    TRACING_AVAILABLE = False
+
 # Import proto messages when available
 try:
     from ..messaging.generated import messages_pb2
@@ -205,6 +212,25 @@ class QueryAgent(BaseAgent):
         Returns:
             Dictionary with processed query information
         """
+        if TRACING_AVAILABLE:
+            @trace_agent_operation("process_query")
+            def _process():
+                set_span_attribute("query.text", query[:100])  # Truncate for privacy
+                set_span_attribute("query.user_id", user_id)
+                set_span_attribute("query.session_id", session_id)
+                return self._process_query_impl(query, user_id, session_id, context_dict)
+            return _process()
+        else:
+            return self._process_query_impl(query, user_id, session_id, context_dict)
+    
+    def _process_query_impl(
+        self,
+        query: str,
+        user_id: str,
+        session_id: str,
+        context_dict: Optional[Dict[str, Any]] = None,
+    ) -> Dict[str, Any]:
+        """Internal implementation of query processing."""
         # Step 1: Get conversation context
         context = self.context_manager.get_context(session_id) or {}
         
@@ -213,13 +239,23 @@ class QueryAgent(BaseAgent):
             context.update(context_dict)
 
         # Step 2: Process with NLP pipeline
+        if TRACING_AVAILABLE:
+            add_span_event("nlp.processing.start")
         doc = self.nlp_pipeline.process(query)
 
         # Step 3: Extract entities
+        if TRACING_AVAILABLE:
+            add_span_event("entity.extraction.start")
         entities = self.entity_recognizer.recognize_entities(query, doc)
+        if TRACING_AVAILABLE:
+            set_span_attribute("entities.count", len(entities))
 
         # Step 4: Classify intent
+        if TRACING_AVAILABLE:
+            add_span_event("intent.classification.start")
         intent = self.intent_classifier.classify(query, entities)
+        if TRACING_AVAILABLE:
+            set_span_attribute("intent.type", str(intent.get("intent_type", "")))
 
         # Step 5: Extract context for current query
         query_context = self.context_manager.extract_context_for_query(
@@ -238,6 +274,8 @@ class QueryAgent(BaseAgent):
             entities=enhanced_entities,
             context=query_context,
         )
+        if TRACING_AVAILABLE:
+            set_span_attribute("clarification.needed", clarification["clarification_needed"])
 
         # Step 8: Update conversation history
         self.context_manager.add_query_to_history(
@@ -249,6 +287,8 @@ class QueryAgent(BaseAgent):
 
         # Step 9: Determine required data sources
         data_sources = self._determine_data_sources(intent, enhanced_entities)
+        if TRACING_AVAILABLE:
+            set_span_attribute("data_sources.count", len(data_sources))
 
         return {
             "query": query,

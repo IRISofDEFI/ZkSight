@@ -29,42 +29,16 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const [ws, setWs] = useState<WebSocket | null>(null);
 
   useEffect(() => {
-    // TODO: Replace with actual WebSocket URL from env
     const wsUrl = process.env.NEXT_PUBLIC_WS_URL || "ws://localhost:3001";
 
-    // For now, simulate connection since WebSocket server doesn't exist yet
-    const simulateConnection = () => {
-      setConnected(true);
-      console.log("WebSocket: Simulated connection (real server not implemented yet)");
-
-      // Simulate periodic updates
-      const interval = setInterval(() => {
-        const mockData = {
-          type: "metric_update",
-          data: {
-            hashrate: 8000 + Math.random() * 2000,
-            tx_volume: 4000 + Math.random() * 2000,
-            timestamp: Date.now(),
-          },
-        };
-        setLastMessage(mockData);
-      }, 30000); // Every 30 seconds
-
-      return () => {
-        clearInterval(interval);
-        setConnected(false);
-      };
-    };
-
-    // Uncomment when WebSocket server is ready:
-    /*
     try {
       const socket = new WebSocket(wsUrl);
 
       socket.onopen = () => {
-        console.log("WebSocket: Connected");
+        console.log("WebSocket: Connected to", wsUrl);
         setConnected(true);
         setWs(socket);
+        toast.success("Connected to server");
       };
 
       socket.onmessage = (event) => {
@@ -77,6 +51,11 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
             toast.warning(data.message, {
               action: { label: "View", onClick: () => window.location.href = "/alerts" },
             });
+          } else if (data.type === "query_complete") {
+            toast.success("Query completed");
+          } else if (data.type === "metric_update") {
+            // Silent update, just store in state
+            console.log("Metric update received:", data);
           }
         } catch (err) {
           console.error("WebSocket: Failed to parse message", err);
@@ -85,7 +64,7 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
 
       socket.onerror = (error) => {
         console.error("WebSocket: Error", error);
-        toast.error("Connection error");
+        toast.error("WebSocket connection error");
       };
 
       socket.onclose = () => {
@@ -96,20 +75,44 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
         // Attempt to reconnect after 5 seconds
         setTimeout(() => {
           console.log("WebSocket: Attempting to reconnect...");
-          // Trigger re-render to reconnect
+          // Component will re-mount and try again
         }, 5000);
       };
 
       return () => {
-        socket.close();
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.close();
+        }
       };
     } catch (err) {
       console.error("WebSocket: Failed to connect", err);
-    }
-    */
+      toast.error("Failed to establish WebSocket connection");
+      
+      // Fallback to simulation if WebSocket fails
+      const simulateConnection = () => {
+        setConnected(false);
+        console.log("WebSocket: Using fallback mode (server not available)");
+        
+        // Simulate periodic updates
+        const interval = setInterval(() => {
+          const mockData = {
+            type: "metric_update",
+            data: {
+              hashrate: 8000 + Math.random() * 2000,
+              tx_volume: 4000 + Math.random() * 2000,
+              timestamp: Date.now(),
+            },
+          };
+          setLastMessage(mockData);
+        }, 30000);
 
-    // Use simulation for now
-    return simulateConnection();
+        return () => {
+          clearInterval(interval);
+        };
+      };
+      
+      return simulateConnection();
+    }
   }, []);
 
   const send = (event: string, data: any) => {
