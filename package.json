@@ -6,15 +6,15 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "docker-compose up -d && npm run dev:api",
+    "dev": "npm run dev --workspace=@chimera/dashboard",
     "dev:api": "npm run dev --workspace=@chimera/api",
-    "dev:dashboard": "npm run dev --workspace=@chimera/dashboard",
+    "dev:all": "docker-compose up -d && concurrently \"npm run dev\" \"npm run dev:api\"",
     "build": "npm run build --workspaces",
     "lint": "npm run lint --workspaces",
     "format": "npm run format --workspaces",
     "test": "npm run test --workspaces"
   },
   "devDependencies": {
-    "typescript": "^5.3.3"
+    "concurrently": "^8.2.0"
   }
 }

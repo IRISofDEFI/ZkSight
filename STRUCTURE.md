@@ -2,123 +2,131 @@
 
 ## Overview
 
-Chimera Analytics is organized as a monorepo with multiple packages for different components of the system.
+Chimera Analytics is a multi-agent analytics platform for Zcash data analysis. The project uses a monorepo structure with the Next.js dashboard at the root and backend services in packages.
 
 ## Directory Structure
 
 ```
 chimera-analytics/
 ├── packages/
+│   ├── dashboard/                   # Next.js Web Dashboard
+│   │   ├── src/
+│   │   │   ├── app/                 # App Router pages
+│   │   │   │   ├── dashboard/       # Main dashboard
+│   │   │   │   ├── dashboard-builder/ # Dashboard builder
+│   │   │   │   ├── query/           # Query interface
+│   │   │   │   ├── report/[id]/     # Report viewer
+│   │   │   │   ├── alerts/          # Alert management
+│   │   │   │   ├── agents/          # Agent monitoring
+│   │   │   │   ├── reports/         # Reports list
+│   │   │   │   ├── settings/        # Settings
+│   │   │   │   ├── login/           # Authentication
+│   │   │   │   ├── signup/          # Registration
+│   │   │   │   ├── mfa/             # Two-factor auth
+│   │   │   │   └── api/             # API routes
+│   │   │   ├── components/          # React components
+│   │   │   │   ├── ui/              # Radix UI components
+│   │   │   │   ├── sidebar.tsx      # Navigation
+│   │   │   │   └── header.tsx       # Header
+│   │   │   └── lib/                 # Utilities
+│   │   │       ├── store.ts         # Zustand state
+│   │   │       ├── websocket.tsx    # WebSocket provider
+│   │   │       └── api.ts           # API client
+│   │   ├── public/                  # Static assets
+│   │   ├── next.config.ts           # Next.js config
+│   │   ├── tailwind.config.js       # Tailwind config
+│   │   ├── tsconfig.json            # TypeScript config
+│   │   └── package.json
 │   ├── agents/                      # Python AI Agents
-│   │   ├── src/
-│   │   │   ├── __init__.py
-│   │   │   └── config.py           # Configuration management
-│   │   ├── tests/
-│   │   ├── requirements.txt        # Python dependencies
-│   │   ├── pyproject.toml          # Python tooling config
-│   │   └── package.json
+│   │   ├── src/                     # Agent implementations
+│   │   ├── tests/                   # Python tests
+│   │   ├── requirements.txt         # Dependencies
+│   │   └── pyproject.toml           # Python config
 │   ├── api/                         # REST API & WebSocket Server
-│   │   ├── src/
-│   │   │   ├── index.ts            # Server entry point
-│   │   │   └── config.ts           # Configuration management
-│   │   ├── tsconfig.json           # TypeScript config
-│   │   ├── .eslintrc.json          # ESLint config
-│   │   ├── .prettierrc.json        # Prettier config
+│   │   ├── src/                     # API implementation
+│   │   ├── tsconfig.json            # TypeScript config
 │   │   └── package.json
-│   ├── sdk/                         # Client SDK
-│   │   ├── src/
-│   │   │   ├── index.ts
-│   │   │   ├── client.ts           # API client
-│   │   │   └── types.ts            # Type definitions
-│   │   ├── tsconfig.json
+│   ├── sdk/                         # TypeScript Client SDK
+│   │   ├── src/                     # SDK implementation
 │   │   └── package.json
-│   └── dashboard/                   # React Web Dashboard
-│       ├── src/
-│       │   ├── main.tsx            # Entry point
-│       │   ├── App.tsx             # Root component
-│       │   └── index.css           # Global styles
-│       ├── index.html
-│       ├── vite.config.ts          # Vite config
-│       ├── tailwind.config.js      # Tailwind config
-│       ├── tsconfig.json
-│       └── package.json
-├── scripts/
-│   ├── setup.sh                     # Unix setup script
-│   └── setup.ps1                    # Windows setup script
-├── docker-compose.yml               # Local dev infrastructure
+│   └── python-sdk/                  # Python Client SDK
+│       ├── src/                     # SDK implementation
+│       └── pyproject.toml
+├── scripts/                         # Setup scripts
+│   ├── setup.sh                     # Unix setup
+│   └── setup.ps1                    # Windows setup
+├── .kiro/                           # Kiro IDE config
+│   └── specs/chimera-analytics/     # Spec documents
+│       ├── requirements.md          # Requirements
+│       ├── design.md                # Design doc
+│       ├── tasks.md                 # Implementation tasks
+│       └── STATUS.md                # Current status
+├── docker-compose.yml               # Infrastructure services
 ├── .env.example                     # Environment template
-├── .gitignore
-├── package.json                     # Monorepo root
-├── Makefile                         # Common commands
-├── README.md                        # Getting started guide
+├── package.json                     # Root package (workspaces)
+├── README.md                        # Getting started
 └── STRUCTURE.md                     # This file
 ```
 
-## Package Details
+## Component Details
 
-### packages/agents
+### Dashboard (packages/dashboard/)
 
-Python-based AI agents that handle:
-- Natural language query processing
-- Data retrieval from multiple sources
-- Statistical analysis and pattern detection
-- Report generation with LLMs
-- Fact-checking and verification
-- Follow-up question suggestions
-- Continuous monitoring and alerting
+Next.js 15 web application with:
+- **Authentication**: NextAuth with OAuth (Google, GitHub)
+- **Query Interface**: Natural language query input
+- **Dashboard Builder**: Customizable widget-based dashboards
+- **Alert Management**: Rule builder and alert history
+- **Report Viewer**: Analysis results with visualizations
+- **Real-time Updates**: WebSocket integration
+
+**Key Technologies:**
+- Next.js 15 (App Router)
+- React 18 + TypeScript
+- TailwindCSS + Radix UI
+- Recharts for visualizations
+- Zustand for state management
+- NextAuth for authentication
+
+### AI Agents (packages/agents/)
+
+Python-based agents:
+- **Query Agent**: NLP query processing
+- **Data Retrieval Agent**: Blockchain and API data fetching
+- **Analysis Agent**: Statistical analysis and pattern detection
+- **Narrative Agent**: Report generation with LLMs
+- **Fact-Checker Agent**: Data verification
+- **Follow-up Agent**: Question suggestions
+- **Monitoring Agent**: Continuous monitoring and alerts
 
 **Key Technologies:**
 - Python 3.11+
-- Pydantic for configuration and validation
-- spaCy/Transformers for NLP
 - LangChain for LLM orchestration
-- Pika for RabbitMQ communication
+- spaCy/Transformers for NLP
+- Pika for RabbitMQ
 
-### packages/api
+### API Server (packages/api/)
 
-Node.js/TypeScript REST API and WebSocket server that:
-- Provides HTTP endpoints for client applications
-- Manages WebSocket connections for real-time updates
-- Handles authentication and authorization
-- Routes requests to appropriate agents via message bus
-- Serves as the main interface layer
+Backend services:
+- REST API endpoints
+- WebSocket server for real-time updates
+- Authentication and authorization
+- Message bus integration
+- Database operations
 
 **Key Technologies:**
-- Node.js 18+
+- Node.js 18+ + TypeScript
 - Express for REST API
 - Socket.io for WebSocket
-- Zod for validation
-- TypeScript for type safety
+- MongoDB for data storage
 
-### packages/sdk
+### SDKs (packages/sdk/, packages/python-sdk/)
 
-TypeScript client SDK that:
-- Provides programmatic access to the API
-- Handles authentication
-- Manages WebSocket connections
-- Offers type-safe interfaces
-
-**Key Technologies:**
-- TypeScript
-- Axios for HTTP requests
-- Socket.io-client for WebSocket
-
-### packages/dashboard
-
-React web application that:
-- Provides user interface for queries
-- Displays reports and visualizations
-- Manages dashboards and widgets
-- Configures alerts and monitoring
-- Shows real-time updates
-
-**Key Technologies:**
-- React 18
-- TypeScript
-- Vite for build tooling
-- TailwindCSS for styling
-- Recharts for visualizations
-- Zustand for state management
+Client libraries for programmatic access:
+- TypeScript SDK for Node.js/browser
+- Python SDK for Python applications
+- Type-safe interfaces
+- Authentication handling
 
 ## Infrastructure Services
 
@@ -169,35 +177,70 @@ Use the `.env.example` files as templates.
 
 ## Development Workflow
 
-1. **Setup**: Run `scripts/setup.sh` (Unix) or `scripts/setup.ps1` (Windows)
-2. **Start Infrastructure**: `docker-compose up -d`
-3. **Start API**: `npm run dev:api`
-4. **Start Dashboard**: `npm run dev:dashboard`
-5. **Run Agents**: (Coming in future tasks)
+### Quick Start
+```bash
+# 1. Install dependencies
+npm install
 
-## Build and Deployment
+# 2. Start infrastructure services
+docker-compose up -d
 
-- **Development**: Hot-reload enabled for all packages
-- **Production Build**: `npm run build` compiles all packages
-- **Docker**: Dockerfiles will be added in deployment tasks
-- **Kubernetes**: Helm charts will be added in deployment tasks
+# 3. Start dashboard (development)
+npm run dev
 
-## Testing
+# 4. Access dashboard
+# http://localhost:3000
+```
 
-- **Unit Tests**: Each package has its own test suite
-- **Integration Tests**: Will be added in testing tasks
-- **E2E Tests**: Will be added in testing tasks
+### Development Commands
+```bash
+npm run dev              # Start Next.js dashboard
+npm run dev:api          # Start API server (when ready)
+npm run build            # Build for production
+npm run lint             # Run ESLint
+npm run format           # Format with Prettier
+```
 
-## Code Quality
+### Infrastructure Services
 
-- **Linting**: ESLint (TypeScript), Pylint (Python)
-- **Formatting**: Prettier (TypeScript), Black (Python)
-- **Type Checking**: TypeScript compiler, mypy (Python)
-- **Pre-commit Hooks**: (To be configured)
+**RabbitMQ** (Message Bus)
+- Port: 5672 (AMQP), 15672 (Management UI)
+- Credentials: guest/guest
 
-## Monorepo Management
+**InfluxDB** (Time Series DB)
+- Port: 8086
+- Credentials: admin/adminpassword
 
-- **Workspaces**: npm workspaces for package management
-- **Shared Dependencies**: Hoisted to root when possible
-- **Independent Versioning**: Each package has its own version
-- **Build Order**: Handled automatically by npm workspaces
+**MongoDB** (Document Store)
+- Port: 27017
+- Credentials: admin/adminpassword
+
+**Redis** (Cache)
+- Port: 6379
+
+**MinIO** (Object Storage)
+- Port: 9000 (API), 9001 (Console)
+- Credentials: minioadmin/minioadmin
+
+## Project Status
+
+### Completed (✅)
+- Dashboard UI (81% complete)
+- Authentication system
+- Query interface
+- Report viewer
+- Alert management UI
+- Dashboard builder UI
+- WebSocket provider
+
+### In Progress (🚧)
+- AI agent implementations
+- API server
+- Real-time data integration
+- Database persistence
+
+### Planned (📋)
+- Drag-and-drop dashboard
+- Real MFA implementation
+- Report export (PDF/HTML/JSON)
+- Agent-to-agent communication

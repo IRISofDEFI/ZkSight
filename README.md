@@ -1,161 +1,186 @@
-# Chimera Multi-Agent Analytics System
+# Chimera Analytics
 
-A comprehensive multi-agent analytics platform for Zcash data analysis, providing natural language querying, automated insights, and real-time monitoring.
+Multi-agent analytics platform for Zcash blockchain data analysis.
+
+## Features
+
+- 🤖 **7 Specialized AI Agents** - Query processing, data retrieval, analysis, narrative generation, fact-checking, follow-up suggestions, and monitoring
+- 📊 **Interactive Dashboards** - Customizable widget-based dashboards with real-time updates
+- 🔍 **Natural Language Queries** - Ask questions in plain English about Zcash network data
+- 📈 **Advanced Analytics** - Statistical analysis, anomaly detection, pattern recognition
+- 🔔 **Smart Alerts** - Configurable alert rules with multiple notification channels
+- 📄 **Automated Reports** - AI-generated reports with visualizations and insights
+
+## Quick Start
+
+### Prerequisites
+
+- Node.js 18+
+- Python 3.11+
+- Docker & Docker Compose
+
+### Installation
+
+```bash
+# Clone repository
+git clone <repository-url>
+cd chimera-analytics
+
+# Install dependencies
+npm install
+
+# Start infrastructure services
+docker-compose up -d
+
+# Start dashboard
+npm run dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+### Default Login
+
+```
+Email: test@example.com
+Password: password123
+```
 
 ## Project Structure
 
 ```
 chimera-analytics/
 ├── packages/
-│   ├── agents/          # Python-based AI agents
-│   ├── api/             # REST API and WebSocket server (Node.js/TypeScript)
-│   ├── sdk/             # Client SDK (TypeScript)
-│   └── dashboard/       # Web dashboard (React/TypeScript)
-├── docker-compose.yml   # Local development environment
-└── package.json         # Monorepo configuration
+│   ├── dashboard/          # Next.js Dashboard
+│   │   ├── src/app/        # Pages (dashboard, query, reports, alerts)
+│   │   ├── src/components/ # React components
+│   │   └── src/lib/        # Utilities (store, websocket, api)
+│   ├── agents/             # Python AI agents
+│   ├── api/                # REST API & WebSocket server
+│   ├── sdk/                # TypeScript SDK
+│   └── python-sdk/         # Python SDK
+└── docker-compose.yml      # Infrastructure services
 ```
 
-## Prerequisites
-
-- Node.js 18+ and npm
-- Python 3.11+
-- Docker and Docker Compose
-- Git
-
-## Quick Start
-
-### 1. Clone and Install Dependencies
-
-```bash
-# Install Node.js dependencies
-npm install
-
-# Install Python dependencies for agents
-cd packages/agents
-pip install -r requirements.txt
-cd ../..
-```
-
-### 2. Configure Environment
-
-```bash
-# Copy environment files
-cp .env.example .env
-cp packages/agents/.env.example packages/agents/.env
-cp packages/api/.env.example packages/api/.env
-
-# Edit .env files with your configuration
-```
-
-### 3. Start Infrastructure Services
-
-```bash
-# Start databases, message bus, and cache
-docker-compose up -d
-
-# Verify services are running
-docker-compose ps
-```
-
-### 4. Run Development Servers
-
-```bash
-# Terminal 1: Start API server
-npm run dev:api
-
-# Terminal 2: Start dashboard
-npm run dev:dashboard
-```
-
-## Infrastructure Services
-
-The Docker Compose setup includes:
-
-- **RabbitMQ** (ports 5672, 15672): Message bus for agent communication
-- **InfluxDB** (port 8086): Time series database for metrics
-- **MongoDB** (port 27017): Document store for reports and configurations
-- **Redis** (port 6379): Cache and session storage
-- **MinIO** (ports 9000, 9001): S3-compatible object storage
-
-### Service URLs
-
-- RabbitMQ Management: http://localhost:15672 (guest/guest)
-- InfluxDB UI: http://localhost:8086 (admin/adminpassword)
-- MinIO Console: http://localhost:9001 (minioadmin/minioadmin)
-- API Server: http://localhost:3000
-- Dashboard: http://localhost:5173
+See [STRUCTURE.md](STRUCTURE.md) for detailed structure.
 
 ## Development
 
-### Code Quality
+### Commands
 
 ```bash
-# Lint all packages
-npm run lint
-
-# Format all packages
-npm run format
-
-# Run tests
-npm run test
+npm run dev              # Start dashboard (port 3000)
+npm run build            # Build for production
+npm run lint             # Run linter
+npm run format           # Format code
 ```
 
-### Python Agents
+### Infrastructure Services
 
-```bash
-cd packages/agents
-
-# Lint
-pylint src/
-
-# Format
-black src/ && isort src/
-
-# Type check
-mypy src/
-
-# Run tests
-pytest
-```
-
-### TypeScript Packages
-
-```bash
-# API
-cd packages/api
-npm run lint
-npm run format
-npm test
-
-# SDK
-cd packages/sdk
-npm run lint
-npm run build
-
-# Dashboard
-cd packages/dashboard
-npm run lint
-npm run build
-```
-
-## Building for Production
-
-```bash
-# Build all packages
-npm run build
-
-# Build Docker images (coming soon)
-# docker build -t chimera-api -f packages/api/Dockerfile .
-# docker build -t chimera-agents -f packages/agents/Dockerfile .
-```
+| Service | Port | Credentials |
+|---------|------|-------------|
+| Dashboard | 3000 | - |
+| RabbitMQ | 5672, 15672 | guest/guest |
+| InfluxDB | 8086 | admin/adminpassword |
+| MongoDB | 27017 | admin/adminpassword |
+| Redis | 6379 | - |
+| MinIO | 9000, 9001 | minioadmin/minioadmin |
 
 ## Architecture
 
-The system follows a microservices architecture with event-driven communication:
+### Dashboard (Next.js 15)
+- **Authentication**: NextAuth with OAuth (Google, GitHub)
+- **State Management**: Zustand
+- **Styling**: TailwindCSS + Radix UI
+- **Charts**: Recharts
+- **Real-time**: WebSocket provider
 
-1. **Interface Layer**: Web dashboard, REST API, WebSocket server, Client SDK
-2. **Agent Layer**: Specialized AI agents (Query, Data Retrieval, Analysis, Narrative, Fact-Checker, Follow-up, Monitoring)
-3. **Message Bus**: RabbitMQ for asynchronous agent communication
-4. **Data Layer**: InfluxDB (time series), MongoDB (documents), Redis (cache), MinIO (objects)
+### AI Agents (Python)
+1. **Query Agent** - Natural language processing
+2. **Data Retrieval Agent** - Blockchain and API data
+3. **Analysis Agent** - Statistical analysis
+4. **Narrative Agent** - Report generation
+5. **Fact-Checker Agent** - Data verification
+6. **Follow-up Agent** - Question suggestions
+7. **Monitoring Agent** - Continuous monitoring
 
+### Backend (Node.js + TypeScript)
+- REST API with Express
+- WebSocket server with Socket.io
+- Message bus integration (RabbitMQ)
+- Database operations (MongoDB, InfluxDB)
 
+## Configuration
+
+Create `.env.local`:
+
+```env
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=your-secret-key
+
+# OAuth (optional)
+GOOGLE_CLIENT_ID=your-google-client-id
+GOOGLE_CLIENT_SECRET=your-google-client-secret
+GITHUB_ID=your-github-client-id
+GITHUB_SECRET=your-github-client-secret
+
+# WebSocket
+NEXT_PUBLIC_WS_URL=ws://localhost:3001
+
+# API
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+## Current Status
+
+### Completed ✅
+- Dashboard UI (81%)
+- Authentication system
+- Query interface
+- Report viewer
+- Alert management
+- Dashboard builder
+- WebSocket integration
+
+### In Progress 🚧
+- AI agent implementations
+- API server
+- Real-time data integration
+- Database persistence
+
+### Planned 📋
+- Drag-and-drop dashboard
+- Real MFA implementation
+- Report export (PDF/HTML/JSON)
+- Agent communication
+
+## Documentation
+
+- [STRUCTURE.md](STRUCTURE.md) - Detailed project structure
+- [.kiro/specs/chimera-analytics/](/.kiro/specs/chimera-analytics/) - Spec documents
+  - [requirements.md](/.kiro/specs/chimera-analytics/requirements.md) - Requirements
+  - [design.md](/.kiro/specs/chimera-analytics/design.md) - Architecture design
+  - [tasks.md](/.kiro/specs/chimera-analytics/tasks.md) - Implementation tasks
+
+## Tech Stack
+
+**Frontend:**
+- Next.js 15, React 18, TypeScript
+- TailwindCSS, Radix UI, Recharts
+- Zustand, NextAuth, Socket.io-client
+
+**Backend:**
+- Node.js, Express, Socket.io
+- Python, LangChain, spaCy
+
+**Infrastructure:**
+- RabbitMQ, MongoDB, InfluxDB, Redis, MinIO
+- Docker, Docker Compose
+
+## License
+
+[Add your license here]
+
+## Contributing
+
+[Add contribution guidelines here]

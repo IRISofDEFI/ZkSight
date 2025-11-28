@@ -37,6 +37,23 @@ const configSchema = z.object({
     windowMs: z.coerce.number().default(60000),
     maxRequests: z.coerce.number().default(100),
   }),
+  
+  auth: z.object({
+    jwtSecret: z.string().default('change-me-in-production'),
+    jwtExpiresIn: z.string().default('24h'),
+    oauth: z.object({
+      google: z.object({
+        clientId: z.string().optional(),
+        clientSecret: z.string().optional(),
+        callbackUrl: z.string().optional(),
+      }).optional(),
+      github: z.object({
+        clientId: z.string().optional(),
+        clientSecret: z.string().optional(),
+        callbackUrl: z.string().optional(),
+      }).optional(),
+    }).optional(),
+  }),
 });
 
 export type Config = z.infer<typeof configSchema>;
@@ -75,6 +92,23 @@ export function loadConfig(): Config {
     rateLimit: {
       windowMs: process.env.RATE_LIMIT_WINDOW_MS,
       maxRequests: process.env.RATE_LIMIT_MAX_REQUESTS,
+    },
+    
+    auth: {
+      jwtSecret: process.env.JWT_SECRET,
+      jwtExpiresIn: process.env.JWT_EXPIRES_IN,
+      oauth: {
+        google: {
+          clientId: process.env.GOOGLE_CLIENT_ID,
+          clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          callbackUrl: process.env.GOOGLE_CALLBACK_URL,
+        },
+        github: {
+          clientId: process.env.GITHUB_CLIENT_ID,
+          clientSecret: process.env.GITHUB_CLIENT_SECRET,
+          callbackUrl: process.env.GITHUB_CALLBACK_URL,
+        },
+      },
     },
   };
   

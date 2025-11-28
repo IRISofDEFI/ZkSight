@@ -1,0 +1,903 @@
+openapi: 3.0.3
+info:
+  title: Chimera Analytics API
+  description: |
+    REST API for the Chimera Multi-Agent Analytics System.
+    
+    The Chimera API provides programmatic access to Zcash analytics capabilities including:
+    - Natural language query submission
+    - Report retrieval and export
+    - Dashboard configuration
+    - Alert management
+    - Metrics data access
+    
+    ## Authentication
+    
+    The API supports two authentication methods:
+    - **JWT Bearer Token**: Include in `Authorization: Bearer <token>` header
+    - **API Key**: Include in `X-API-Key` header
+    
+    ## Rate Limiting
+    
+    API requests are rate limited to 100 requests per minute per user/API key.
+    Rate limit information is included in response headers:
+    - `X-RateLimit-Limit`: Maximum requests per window
+    - `X-RateLimit-Remaining`: Remaining requests in current window
+    - `X-RateLimit-Reset`: Time when the rate limit resets
+    
+  version: 1.0.0
+  contact:
+    name: Chimera API Support
+    email: support@chimera-analytics.example.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Development server
+  - url: https://api.chimera-analytics.example.com
+    description: Production server
+
+tags:
+  - name: Queries
+    description: Query submission and management
+  - name: Reports
+    description: Report retrieval and export
+  - name: Dashboards
+    description: Dashboard configuration
+  - name: Alerts
+    description: Alert rule management
+  - name: Metrics
+    description: Metrics data access
+
+security:
+  - BearerAuth: []
+  - ApiKeyAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Check API server health status
+      tags: []
+      security: []
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+
+  /api/queries:
+    post:
+      summary: Submit query
+      description: Submit a natural language query for analysis
+      tags:
+        - Queries
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - query
+              properties:
+                query:
+                  type: string
+                  description: Natural language query text
+                  example: "What was the shielded transaction volume last week?"
+                sessionId:
+                  type: string
+                  format: uuid
+                  description: Session ID for conversation context
+                context:
+                  type: object
+                  description: Additional context for query processing
+      responses:
+        '202':
+          description: Query accepted for processing
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuerySubmissionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimitExceeded'
+
+    get:
+      summary: List queries
+      description: List user's query history
+      tags:
+        - Queries
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Query list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/queries/{id}:
+    get:
+      summary: Get query status
+      description: Get the status and results of a submitted query
+      tags:
+        - Queries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Query status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueryStatusResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    delete:
+      summary: Cancel query
+      description: Cancel a pending or processing query
+      tags:
+        - Queries
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Query cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queryId:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [cancelled]
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/reports/{id}:
+    get:
+      summary: Get report
+      description: Retrieve a generated report by ID
+      tags:
+        - Reports
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Report retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/reports:
+    get:
+      summary: List reports
+      description: List user's reports with pagination
+      tags:
+        - Reports
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: queryId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by query ID
+      responses:
+        '200':
+          description: Report list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportListResponse'
+
+  /api/reports/{id}/export/{format}:
+    get:
+      summary: Export report
+      description: Export report in specified format (pdf, html, json)
+      tags:
+        - Reports
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: format
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [pdf, html, json]
+      responses:
+        '200':
+          description: Report exported successfully
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            text/html:
+              schema:
+                type: string
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+
+  /api/dashboards:
+    post:
+      summary: Create dashboard
+      description: Create a new dashboard configuration
+      tags:
+        - Dashboards
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardCreate'
+      responses:
+        '201':
+          description: Dashboard created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+
+    get:
+      summary: List dashboards
+      description: List user's dashboards
+      tags:
+        - Dashboards
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+      responses:
+        '200':
+          description: Dashboard list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardListResponse'
+
+  /api/dashboards/{id}:
+    get:
+      summary: Get dashboard
+      description: Retrieve dashboard configuration by ID
+      tags:
+        - Dashboards
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dashboard retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+
+    put:
+      summary: Update dashboard
+      description: Update dashboard configuration
+      tags:
+        - Dashboards
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DashboardUpdate'
+      responses:
+        '200':
+          description: Dashboard updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Dashboard'
+
+    delete:
+      summary: Delete dashboard
+      description: Delete a dashboard
+      tags:
+        - Dashboards
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Dashboard deleted successfully
+
+  /api/alerts:
+    post:
+      summary: Create alert rule
+      description: Create a new alert rule
+      tags:
+        - Alerts
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertRuleCreate'
+      responses:
+        '201':
+          description: Alert rule created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+
+    get:
+      summary: List alert rules
+      description: List user's alert rules
+      tags:
+        - Alerts
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: enabled
+          in: query
+          schema:
+            type: boolean
+          description: Filter by enabled status
+      responses:
+        '200':
+          description: Alert rule list retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRuleListResponse'
+
+  /api/alerts/{id}:
+    get:
+      summary: Get alert rule
+      description: Retrieve alert rule by ID
+      tags:
+        - Alerts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Alert rule retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+
+    put:
+      summary: Update alert rule
+      description: Update an alert rule
+      tags:
+        - Alerts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlertRuleUpdate'
+      responses:
+        '200':
+          description: Alert rule updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertRule'
+
+    delete:
+      summary: Delete alert rule
+      description: Delete an alert rule
+      tags:
+        - Alerts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Alert rule deleted successfully
+
+  /api/metrics:
+    get:
+      summary: Query metrics
+      description: Query time series metrics data
+      tags:
+        - Metrics
+      parameters:
+        - name: metric
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Metric name
+          example: zcash_shielded_transactions
+        - name: start
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Start time (ISO 8601 or relative like "-1h")
+          example: "-7d"
+        - name: end
+          in: query
+          schema:
+            type: string
+          description: End time (ISO 8601 or relative)
+        - name: aggregation
+          in: query
+          schema:
+            type: string
+            enum: [mean, sum, min, max, count]
+          description: Aggregation function
+        - name: interval
+          in: query
+          schema:
+            type: string
+          description: Aggregation interval (e.g., "1h", "1d")
+          example: "1h"
+      responses:
+        '200':
+          description: Metrics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MetricsResponse'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      description: Page number
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+      description: Items per page
+
+  schemas:
+    QuerySubmissionResponse:
+      type: object
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending]
+        message:
+          type: string
+        _links:
+          type: object
+          properties:
+            self:
+              type: string
+            cancel:
+              type: string
+
+    QueryStatusResponse:
+      type: object
+      properties:
+        queryId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled]
+        query:
+          type: string
+        result:
+          type: object
+          properties:
+            reportId:
+              type: string
+              format: uuid
+            error:
+              type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    QueryListResponse:
+      type: object
+      properties:
+        queries:
+          type: array
+          items:
+            type: object
+            properties:
+              queryId:
+                type: string
+                format: uuid
+              query:
+                type: string
+              status:
+                type: string
+              createdAt:
+                type: string
+                format: date-time
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Report:
+      type: object
+      properties:
+        reportId:
+          type: string
+          format: uuid
+        queryId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        executiveSummary:
+          type: string
+        sections:
+          type: array
+          items:
+            type: object
+            properties:
+              title:
+                type: string
+              content:
+                type: string
+              order:
+                type: integer
+        visualizations:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+        createdAt:
+          type: string
+          format: date-time
+
+    ReportListResponse:
+      type: object
+      properties:
+        reports:
+          type: array
+          items:
+            type: object
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    Dashboard:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        layout:
+          type: object
+        widgets:
+          type: array
+          items:
+            type: object
+        refreshInterval:
+          type: integer
+        shared:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DashboardCreate:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        layout:
+          type: object
+        widgets:
+          type: array
+          items:
+            type: object
+        refreshInterval:
+          type: integer
+
+    DashboardUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        layout:
+          type: object
+        widgets:
+          type: array
+        refreshInterval:
+          type: integer
+
+    DashboardListResponse:
+      type: object
+      properties:
+        dashboards:
+          type: array
+          items:
+            type: object
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    AlertRule:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        condition:
+          $ref: '#/components/schemas/AlertCondition'
+        channels:
+          type: array
+          items:
+            type: object
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    AlertCondition:
+      type: object
+      required:
+        - metric
+        - operator
+        - threshold
+      properties:
+        metric:
+          type: string
+        operator:
+          type: string
+          enum: ['>', '<', '==', '!=', 'change_pct']
+        threshold:
+          type: number
+        duration:
+          type: integer
+        cooldown:
+          type: integer
+
+    AlertRuleCreate:
+      type: object
+      required:
+        - name
+        - condition
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        condition:
+          $ref: '#/components/schemas/AlertCondition'
+        channels:
+          type: array
+          items:
+            type: object
+        enabled:
+          type: boolean
+
+    AlertRuleUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        condition:
+          $ref: '#/components/schemas/AlertCondition'
+        channels:
+          type: array
+        enabled:
+          type: boolean
+
+    AlertRuleListResponse:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            type: object
+        pagination:
+          $ref: '#/components/schemas/Pagination'
+
+    MetricsResponse:
+      type: object
+      properties:
+        metric:
+          type: string
+        timeRange:
+          type: object
+        aggregation:
+          type: string
+        interval:
+          type: string
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              timestamp:
+                type: string
+                format: date-time
+              value:
+                type: number
+              tags:
+                type: object
+        count:
+          type: integer
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            retryable:
+              type: boolean
+            details:
+              type: object
+        requestId:
+          type: string
+        timestamp:
+          type: integer
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimitExceeded:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
